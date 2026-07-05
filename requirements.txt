@@ -1,0 +1,10 @@
+numpy<2
+beautifulsoup4
+requests
+sentence-transformers
+chromadb
+rank-bm25
+python-dotenv
+google-generativeai
+pydantic
+streamlit
