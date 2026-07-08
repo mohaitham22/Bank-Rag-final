@@ -26,17 +26,7 @@ def semantic_split_documents(
     min_chars=250,
     max_chars=1800,
 ):
-    """
-    Splits each document's text into semantic chunks by finding sentences
-    where the meaning shifts a lot (a big jump in embedding distance).
 
-    Args:
-        documents (list): List of dicts with "text" and "metadata" keys.
-        embedding_model (SentenceTransformer): Model used to embed sentences.
-
-    Returns:
-        list: A list of dicts with "text" and "metadata" keys (one per chunk).
-    """
     new_docs = []
 
     for doc in documents:
