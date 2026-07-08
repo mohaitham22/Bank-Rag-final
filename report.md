@@ -6,7 +6,8 @@ Route Graduation Project — AI Engineering Assessment
 
 ## 1. Dataset Description
 
->> TODO: Fill in the following based on your actual scraping:
+> > TODO: Fill in the following based on your actual scraping:
+
 - **Website/source used:** [name of the site you scraped bank pages from]
 - **Source URLs:** [list them, or point to `data/bank_urls.txt`]
 - **Type of data collected:** HTML pages containing bank name, description,
@@ -27,6 +28,7 @@ with `requests` and `BeautifulSoup`.
 HTML parsing.
 
 **Method:**
+
 - A list of target URLs was read from `data/bank_urls.txt`.
 - Each page's raw HTML was fetched and saved to `data/raw_html/` for reproducibility.
 - Structured fields were then extracted from each page:
@@ -45,9 +47,9 @@ repeated spaces/newlines) before being stored. Each page's structured result
 was saved as its own JSON file, so any failed or partial extraction is
 isolated to a single record rather than corrupting the whole dataset.
 
->> TODO: **Challenges faced during data collection:** [e.g. inconsistent page
-layouts across banks, missing FAQ blocks on some pages, rate limiting, pages
-without an "About" heading, etc. — describe what you actually ran into.]
+> > TODO: **Challenges faced during data collection:** [e.g. inconsistent page
+> > layouts across banks, missing FAQ blocks on some pages, rate limiting, pages
+> > without an "About" heading, etc. — describe what you actually ran into.]
 
 ## 3. Chunking Strategy
 
@@ -68,7 +70,7 @@ retrieval, regardless of whether a natural meaning-break was found.
 branches, leadership) with no consistent structure like headings or bullet
 points. A fixed-size chunker (e.g. every 500 characters) risks cutting a
 sentence — or a fact — in half. Semantic chunking instead tries to respect
-where the *meaning* actually changes.
+where the _meaning_ actually changes.
 
 **What was observed in the data that influenced the decision:** Bank
 `about`/`all_text` fields varied a lot in length and structure page to page,
@@ -77,16 +79,18 @@ question/answer pairs. This mix made a single fixed rule (like "always split
 every N sentences") a poor fit — semantic chunking adapts per-document instead.
 
 **Other strategies considered and rejected:**
-- *Fixed character/token chunking:* simplest to implement, but risks
+
+- _Fixed character/token chunking:_ simplest to implement, but risks
   splitting a sentence or a fact mid-way, especially in longer `about`/`all_text` fields.
-- *One chunk per document field (no splitting at all):* simpler, but some
+- _One chunk per document field (no splitting at all):_ simpler, but some
   `about`/`all_text` fields are long enough that important details near the
   end would get diluted in a single large embedding, hurting retrieval precision.
-- *Paragraph-based splitting:* rejected because the scraped text was
+- _Paragraph-based splitting:_ rejected because the scraped text was
   whitespace-normalized into a single line during cleaning, so paragraph
   boundaries were not preserved in the extracted data.
 
 **Weaknesses of the chosen strategy:**
+
 - It depends on an embedding model's notion of "similar meaning," which can
   occasionally miss a real topic shift or invent one where there isn't a strong shift.
 - It requires embedding every sentence during chunking (not just every chunk),
@@ -108,6 +112,7 @@ exact source and bank, regardless of chunk boundaries.
 **Embedding model used:** `all-MiniLM-L6-v2` (via `sentence-transformers`).
 
 **Why it was selected:**
+
 - **Language support:** Strong general-purpose English performance, which
   matches the dataset (English-language bank pages).
 - **Accuracy:** A well-established, widely benchmarked model for semantic
@@ -126,6 +131,7 @@ exact source and bank, regardless of chunk boundaries.
 **Vector store used:** ChromaDB (`PersistentClient`, stored in `chroma_db/`).
 
 **Why it was selected:**
+
 - Simple, embedded (no separate server to run), and persists to disk between runs.
 - Native support for storing metadata alongside each chunk and filtering
   search results using that metadata (`where` filters), which the project's
@@ -136,13 +142,14 @@ exact source and bank, regardless of chunk boundaries.
 ## 5. Gemini API Usage
 
 **Where Gemini was used:**
+
 - Final answer generation (`llm.py`)
 - Query rewriting (`query_intelligence.py`)
 - Query classification (`query_intelligence.py`)
 - Structured filter extraction (`query_intelligence.py`)
 
 **Prompt design:** The generation prompt (`prompt.txt`) explicitly instructs
-the model to act as a banking information assistant, to answer *only* using
+the model to act as a banking information assistant, to answer _only_ using
 the retrieved context, to use the bank's name when relevant, and to respond
 with a fixed fallback sentence ("I could not find the answer in the
 document.") when the answer isn't present in the retrieved chunks.
@@ -154,6 +161,7 @@ for that specific question — which keeps the answer traceable back to
 specific sources.
 
 **How hallucination was reduced:**
+
 - The prompt explicitly forbids using outside knowledge.
 - A required fallback phrase is defined for when context is insufficient,
   giving the model an explicit "safe" way out instead of guessing.
@@ -169,13 +177,13 @@ clearer, more specific, and in English — without changing its meaning.
 **Query classification approach:** The rewritten query is classified by
 Gemini into exactly one of five categories tailored to the bank domain:
 
-| Category | Meaning |
-|---|---|
+| Category         | Meaning                                   |
+| ---------------- | ----------------------------------------- |
 | `factual_lookup` | Asking for a specific fact about one bank |
-| `comparison` | Comparing two or more banks |
-| `location` | Asking about a bank's country/location |
-| `faq` | A typical FAQ-style question |
-| `out_of_scope` | Not related to banks at all |
+| `comparison`     | Comparing two or more banks               |
+| `location`       | Asking about a bank's country/location    |
+| `faq`            | A typical FAQ-style question              |
+| `out_of_scope`   | Not related to banks at all               |
 
 **Filter extraction approach:** Gemini is prompted to return a strict JSON
 object with `bank`, `country`, and `type` fields (each `null` if not implied
@@ -184,9 +192,9 @@ detected filters narrow the search to only matching metadata.
 
 **Examples for each query category:**
 
->> TODO: Run a few real questions through `app.py` or `query_intelligence.py`
-directly and paste one real example (original query -> rewritten query ->
-class -> filters) for each of the 5 categories above. Example format:
+> > TODO: Run a few real questions through `app.py` or `query_intelligence.py`
+> > directly and paste one real example (original query -> rewritten query ->
+> > class -> filters) for each of the 5 categories above. Example format:
 
 ```
 Category: location
@@ -213,26 +221,29 @@ so no separate index needs to be kept in sync.
 
 **Fusion method:** Reciprocal Rank Fusion (RRF). Each chunk's final score is
 `1 / (k + rank)` summed across both result lists (with `k = 60`), so a chunk
-ranked highly in either list is boosted, and a chunk ranked highly in *both*
+ranked highly in either list is boosted, and a chunk ranked highly in _both_
 lists is boosted the most. RRF was chosen over a weighted-score fusion because
 dense distance and BM25 scores are on incompatible numeric scales — RRF avoids
 needing to normalize or tune a weight between them.
 
 **Comparison between dense-only and hybrid search:**
 
->> TODO: Run `python compare_search.py` (edit the `QUERIES` list at the top
-to real questions about your dataset first) and paste the actual output here
-for at least 3 queries. For each one, note:
+This section should summarize the observed difference between dense-only and
+hybrid search for at least 3 real questions about the dataset. For each query,
+note:
+
 - Which chunks came back for dense-only vs. hybrid
-- Which one you judged as better, and why (e.g. hybrid surfaced a chunk
-  containing an exact bank name/term that dense-only ranked lower or missed)
+- Which one you judged as better, and why (for example, hybrid surfaced a
+  chunk containing an exact bank name or term that dense-only ranked lower or
+  missed)
 
 ## 8. Streamlit GUI
 
->> TODO: Add 2-3 screenshots of `app.py` in use here (question asked,
-retrieved chunks expanded, final answer shown).
+> > TODO: Add 2-3 screenshots of `app.py` in use here (question asked,
+> > retrieved chunks expanded, final answer shown).
 
 **Explanation of interface components:**
+
 - A search mode toggle (Dense only / Hybrid) to demonstrate both retrieval methods
 - A text input and "Ask" button for the user's question
 - A "Query Understanding" panel showing the original query, rewritten query,
@@ -250,7 +261,8 @@ displays the results.
 
 ## 9. Limitations
 
->> TODO: Review and adjust these based on what you actually observed:
+> > TODO: Review and adjust these based on what you actually observed:
+
 - **Small dataset size:** [fill in your actual number of banks/chunks — currently ~354 chunks]
 - **Website structure inconsistency:** Not every bank page had all fields
   (some lacked an "About" section or FAQ block), so some chunks are sparser than others.

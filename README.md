@@ -33,7 +33,6 @@ Built for the Route Graduation Project (AI Engineering Assessment).
 ├── vectordb.py                 # Builds/queries the ChromaDB vector store
 ├── create_db.py                # Runs steps 2-4: load -> chunk -> embed -> store
 ├── hybrid_search.py            # BM25 + dense fusion (hybrid search)
-├── compare_search.py           # Compares dense-only vs hybrid results for sample queries
 ├── query_intelligence.py       # Query rewriting, classification, filter extraction
 ├── llm.py                       # Gemini API wrapper for grounded answer generation
 ├── prompt.txt                   # Prompt template used by llm.py
@@ -46,6 +45,7 @@ Built for the Route Graduation Project (AI Engineering Assessment).
 ## Setup
 
 1. Clone the repository and create a virtual environment (recommended):
+
    ```bash
    python -m venv venv
    venv\Scripts\activate        # Windows
@@ -53,6 +53,7 @@ Built for the Route Graduation Project (AI Engineering Assessment).
    ```
 
 2. Install dependencies:
+
    ```bash
    pip install -r requirements.txt
    ```
@@ -76,11 +77,6 @@ Then launch the app:
 ```bash
 streamlit run app.py
 ```
-
-## Optional: Command-Line Testing
-
-- `python compare_search.py` — prints a side-by-side comparison of dense-only vs
-  hybrid search results for sample queries (used for the Level 3 report section).
 
 ## Notes
 
